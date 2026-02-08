@@ -376,7 +376,3 @@ wallet-service/
 ├── Dockerfile
 └── README.md
 ```
-
-## 📄 License
-
-ISC
