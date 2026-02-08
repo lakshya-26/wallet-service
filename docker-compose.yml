@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: wallet_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wallet_service # Database is auto-created on first startup
+    ports:
+      - '5433:5432' # Use 5433 on host to avoid conflict with local PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Wallet Service Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wallet_service
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: wallet_service
+      DB_HOST: db
+      DB_DIALECT: postgres
+      DB_PORT: 5432
+      DB_LOGGING: 'true'
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        npm run db:setup &&
+        npm run dev
+      "
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
